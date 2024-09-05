@@ -63,7 +63,7 @@ local lazy_userdata = {
 }
 
 --- Make a strict element lazy (if possible).
-local function make_lazy (element)
+local function tolazy (element)
   local tp = type(element)
   if tp ~= 'table' or not element.strict then
     -- already lazy
@@ -74,7 +74,7 @@ local function make_lazy (element)
   if ud then
     local new = {}
     for key, value in pairs(element) do
-      new[key] = make_lazy(value)
+      new[key] = tolazy(value)
     end
     debug_setuservalue(ud, new, 1)
     local lazy = ud:clone()
@@ -84,7 +84,7 @@ local function make_lazy (element)
     print("no userdata for ", tag_or_type(element))
     local new = {}
     for key, value in pairs(element) do
-      new[key] = make_lazy(value)
+      new[key] = tolazy(value)
     end
     return setmetatable(new, debug_getmetatable(element))
   else
@@ -107,13 +107,13 @@ local function make_metatable (name)
     new[key] = metamethods[key] and
       function(obj, ...)
         print('hello from', key)
-        return value(make_lazy(obj), ...)
+        return value(tolazy(obj), ...)
       end
   end
   for methodname, fn in pairs(orig.methods or {}) do
     new[methodname] = function(obj, ...)
       print('hello from', methodname)
-      return fn(make_lazy(obj), ...)
+      return fn(tolazy(obj), ...)
     end
   end
   new.__name = name -- .. ' (strict)'
@@ -151,7 +151,7 @@ end
 
 local M = {
   tostrict = tostrict,
-  make_lazy = make_lazy,
+  tolazy = tolazy,
 }
 
 return M
