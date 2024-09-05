@@ -1,14 +1,14 @@
---- strict-ast.lua – strict (non-lazy) pandoc AST objects.
+--- revno.lua – eager conversion of pandoc AST elements to Lua tables.
 ---
 --- Copyright: © 2024 Albert Krewinkel
 --- License: MIT – see LICENSE for details
 
 local pandoc = require 'pandoc'
-local jog = require 'jog'
 
-local registry = debug.getregistry()
-
+-- Debugging functions
+local registry           = debug.getregistry()
 local debug_getmetatable = debug.getmetatable
+local debug_setuservalue = debug.setuservalue
 
 --- Get the element type; like pandoc.utils.type, but faster.
 local function get_metatable_name (x)
@@ -76,7 +76,7 @@ local function make_lazy (element)
     for key, value in pairs(element) do
       new[key] = make_lazy(value)
     end
-    debug.setuservalue(ud, new, 1)
+    debug_setuservalue(ud, new, 1)
     local lazy = ud:clone()
     print("Lazy type", tag_or_type(lazy))
     return lazy
