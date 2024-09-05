@@ -78,10 +78,8 @@ local function tolazy (element)
     end
     debug_setuservalue(ud, new, 1)
     local lazy = ud:clone()
-    print("Lazy type", tag_or_type(lazy))
     return lazy
   elseif type(element) == 'table' then
-    print("no userdata for ", tag_or_type(element))
     local new = {}
     for key, value in pairs(element) do
       new[key] = tolazy(value)
@@ -106,13 +104,11 @@ local function make_metatable (name)
   for key, value in pairs(orig) do
     new[key] = metamethods[key] and
       function(obj, ...)
-        print('hello from', key)
         return value(tolazy(obj), ...)
       end
   end
   for methodname, fn in pairs(orig.methods or {}) do
     new[methodname] = function(obj, ...)
-      print('hello from', methodname)
       return fn(tolazy(obj), ...)
     end
   end
