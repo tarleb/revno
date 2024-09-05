@@ -133,7 +133,7 @@ local function get_new_metatable (element)
   return mt
 end
 
-local function make_strict (element)
+local function tostrict (element)
   local tp = type(element)
   if tp ~= 'table' and tp ~= 'userdata' then
     return element
@@ -142,7 +142,7 @@ local function make_strict (element)
   for key, value in pairs(element) do
     -- ignore methods
     if type(value) ~= 'function' then
-      new[key] = make_strict(value)
+      new[key] = tostrict(value)
     end
   end
   local mt = get_new_metatable(element)
@@ -150,7 +150,7 @@ local function make_strict (element)
 end
 
 local M = {
-  make_strict = make_strict,
+  tostrict = tostrict,
   make_lazy = make_lazy,
 }
 
