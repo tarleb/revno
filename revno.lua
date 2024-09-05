@@ -135,7 +135,7 @@ end
 
 local function tostrict (element)
   local tp = type(element)
-  if tp ~= 'table' and tp ~= 'userdata' then
+  if (tp ~= 'table' and tp ~= 'userdata') or element.strict then
     return element
   end
   local new = {}
