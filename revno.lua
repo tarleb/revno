@@ -97,15 +97,26 @@ local metamethods = {
   __tostring = true,
 }
 
+local listy_type = {
+  List = true,
+  Inlines = true,
+  Blocks = true,
+}
+
 local function make_metatable (name)
   local orig =
     assert(registry[name], "No such metatable in the registry: " .. name)
   local new = {__name = name}
+  local islisty = listy_type[name]
   for key, value in pairs(orig) do
-    new[key] = metamethods[key] and
-      function(obj, ...)
-        return value(tolazy(obj), ...)
-      end
+    if islisty then
+      new[key] = value
+    else
+      new[key] = (metamethods[key] or listy_type[name]) and
+        function(obj, ...)
+          return value(tolazy(obj), ...)
+        end
+    end
   end
   for methodname, fn in pairs(orig.methods or {}) do
     new[methodname] = function(obj, ...)
@@ -118,7 +129,11 @@ local function make_metatable (name)
   return new
 end
 
-local strict_metatables = {}
+local strict_metatables = {
+  Blocks = registry['Blocks'],
+  Inlines = registry['Inlines'],
+  List = registry['List'],
+}
 local function get_new_metatable (element)
   local name = get_metatable_name(element)
   local mt = name and strict_metatables[name]
@@ -129,15 +144,63 @@ local function get_new_metatable (element)
   return mt
 end
 
+local element_fields = {
+  -- Blocks with Blocks content
+  BlockQuote = {'content'},
+  Div = {'content', 'attr'},
+  Header = {'attr', 'content', 'level'},
+  -- Blocks with Inlines content
+  Para = {'content'},
+  Plain = {'content'},
+  -- Blocks with List content
+  LineBlock = {'content'},
+  BulletList = {'content'},
+  OrderedList = {'content'},
+  DefinitionList = {'content'},
+  -- Inlines with Inlines content
+  Cite = {'citations', 'content'},
+  Emph = {'content'},
+  Link = {'content', 'attr', 'target', 'title'},
+  Image = {'caption', 'attr', 'target', 'title'},
+  Quoted = {'content'},
+  SmallCaps = {'content'},
+  Span = {'content'},
+  Strikeout = {'content'},
+  Strong = {'content'},
+  Subscript = {'content'},
+  Superscript = {'content'},
+  Underline = {'content'},
+  -- Inline with Blocks content
+  Note = {'content'},
+  Code = {'text', 'attr'},
+  CodeBlock = {'text', 'attr'},
+  HorizontalRule = {},
+  LineBreak = {},
+  Math = {},
+  RawBlock = {'text'},
+  RawInline = {'text'},
+  Space = {},
+  SoftBreak = {},
+  Str = {'text'},
+  Pandoc = {'blocks', 'meta'}
+}
+
 local function tostrict (element)
   local tp = type(element)
   if (tp ~= 'table' and tp ~= 'userdata') or element.strict then
     return element
   end
   local new = {}
-  for key, value in pairs(element) do
-    -- ignore methods
-    if type(value) ~= 'function' then
+  local fields = element_fields[element.tag]
+  if fields then
+    new.tag = element.tag
+    for _, field in pairs(fields) do
+      -- ignore methods
+      new[field] = tostrict(element[field])
+    end
+  else
+    for key, value in pairs(element) do
+      -- ignore methods
       new[key] = tostrict(value)
     end
   end
